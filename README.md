@@ -1,118 +1,223 @@
-# HackatonFinal2.1 – User CRUD API
+# Employee Management System
 
-Bu loyiha **Node.js + Express + MongoDB** bilan yozilgan, to‘liq **User CRUD** API.  
-Loyihada foydalanuvchilarni yaratish, o‘chirish, yangilash va olish mumkin.  
+A full-stack Employee Management application built with React, Node.js/Express, and MongoDB.
 
----
+## Features
 
-## 🛠 Texnologiyalar
+### Backend (Node.js + Express + Mongoose)
+- **Employee Model**: name, surname, email, role (employee/admin), department, position, salary (base, kpiPercent, bonus, penalty)
+- **CRUD API Endpoints**:
+  - GET /api/users → fetch all employees
+  - POST /api/users → add a new employee
+  - PUT /api/users/:id → update an employee
+  - DELETE /api/users/:id → delete an employee
+- **Full Validation**: Express-validator for request validation
+- **Error Handling**: Proper error responses for all scenarios
+- **MongoDB Connection**: Connects to MongoDB with CORS and JSON middleware
 
-- Node.js (v24+)
-- Express.js
-- MongoDB (Mongoose)
-- bcryptjs (password hash)
-- Nodemon (development)
-- dotenv (environment variables)
-- CORS
+### Frontend (React + Ant Design)
+- **Employees Page**: Complete employee management interface
+- **Employee Table**: Displays all employees with actions
+- **Add/Edit Modal**: Form for adding and editing employees
+- **Stat Cards**: Shows total employees, admins, total salary, and average salary
+- **Full API Integration**: Uses axios to communicate with backend
+- **Form Validation**: Ant Design form validation
+- **Error Handling**: Displays errors using Ant Design message component
 
----
+## Project Structure
 
-## 📁 Fayl tuzilishi
+```
+/
+├── adminPanel/          # React Frontend
+│   ├── src/
+│   │   ├── pages/
+│   │   │   └── Employees.jsx    # Main employee management page
+│   │   ├── components/
+│   │   │   ├── EmployeeTable.jsx # Employee table component
+│   │   │   └── StatCard.jsx      # Statistics card component
+│   │   └── api.js              # API service for backend communication
+│   └── package.json
+│
+└── server/              # Node.js Backend
+    ├── src/
+    │   ├── models/
+    │   │   └── user.js           # Employee model
+    │   ├── controllers/
+    │   │   └── user.controller.js # User controller
+    │   ├── routes/
+    │   │   └── user.routes.js    # API routes
+    │   ├── middleware/
+    │   │   └── validate.js       # Validation middleware
+    │   └── app.js              # Express app configuration
+    ├── server.js            # Server entry point
+    └── package.json
+```
 
-server/
-├─ src/
-│ ├─ config/
-│ │ └─ db.js # MongoDB bilan ulanish
-│ ├─ controllers/
-│ │ └─ user.controller.js # User CRUD logikasi
-│ ├─ models/
-│ │ └─ user.model.js # User model
-│ ├─ routes/
-│ │ └─ user.routes.js # User API endpointlari
-│ └─ app.js # Express app
-├─ server.js # Server entry point
-├─ package.json
-└─ .env
+## Setup Instructions
 
-markdown
-Copy code
+### 1. Install Dependencies
 
----
-
-## ⚡ Xususiyatlar (Features)
-
-- User yaratish (`POST /api/users`)
-- Barcha userlarni olish (`GET /api/users`)
-- Bitta userni olish (`GET /api/users/:id`)
-- Userni yangilash (`PUT /api/users/:id`)
-- Userni o‘chirish (`DELETE /api/users/:id`)
-- Password **hashlangan** (`bcryptjs`)
-- `createdAt` va `updatedAt` avtomatik saqlanadi
-- Role support (`user` / `admin`)
-
----
-
-## 🔧 O‘rnatish (Installation)
-
-1. Repository ni klonlash:
-
+#### Backend
 ```bash
-git clone <repository-url>
-cd HackatonFinal2.1/server
-Paketlarni o‘rnatish:
-
-bash
-Copy code
+cd server
 npm install
-.env faylini yaratish va sozlash:
+```
 
-ini
-Copy code
+#### Frontend
+```bash
+cd adminPanel
+npm install
+```
+
+### 2. Configure Environment
+
+Create a `.env` file in the `server` directory:
+
+```env
 PORT=5000
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname
-Serverni ishga tushirish (development):
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/employee-db?retryWrites=true&w=majority
+```
 
-bash
-Copy code
+### 3. Run the Application
+
+#### Start Backend
+```bash
+cd server
 npm run dev
-Server ishlayotganini terminalda ko‘rasiz:
+```
 
-arduino
-Copy code
-✅ Server ishlayapti: http://localhost:5000
-✅ MongoDB ulandi
-🧪 API Endpoints
-Method	URL	Tavsif
-GET	/api/users	Barcha userlar
-GET	/api/users/:id	Bitta user
-POST	/api/users	Yangi user yaratish
-PUT	/api/users/:id	User ma’lumotlarini yangilash
-DELETE	/api/users/:id	Userni o‘chirish
+#### Start Frontend
+```bash
+cd adminPanel
+npm run dev
+```
 
-Example: POST /api/users
-json
-Copy code
+The application will be available at:
+- Backend: `http://localhost:5000`
+- Frontend: `http://localhost:5173`
+
+## API Documentation
+
+### Get All Employees
+```
+GET /api/users
+```
+
+**Response**: Array of employee objects
+
+### Create Employee
+```
+POST /api/users
+```
+
+**Request Body**:
+```json
 {
-  "name": "Ali",
-  "surname": "Valiyev",
-  "email": "ali@gmail.com",
-  "password": "123456",
-  "role": "user"
+  "name": "John",
+  "surname": "Doe",
+  "email": "john@example.com",
+  "role": "employee",
+  "position": "Developer",
+  "department": "IT",
+  "salary": {
+    "base": 5000,
+    "kpiPercent": 10,
+    "bonus": 500,
+    "penalty": 0
+  }
 }
-Javobda password hashlangan bo‘ladi.
+```
 
-createdAt va updatedAt avtomatik qo‘shiladi.
+**Response**: Created employee object
 
-🔑 Key Points
-Password xavfsizligi: Password ochiq saqlanmaydi, hash bilan saqlanadi.
+### Update Employee
+```
+PUT /api/users/:id
+```
 
-Timestamps: User yaratishda sana avtomatik qo‘shiladi.
+**Request Body**: Same as create, but only fields to update are required
 
-Role: Foydalanuvchi admin yoki oddiy user bo‘lishi mumkin.
+**Response**: Updated employee object
 
-📌 Keyingi qadamlar
-JWT token bilan login va autentifikatsiya
+### Delete Employee
+```
+DELETE /api/users/:id
+```
 
-Admin panelga role-based access
+**Response**: Success message
 
-Frontend bilan ulash (React, Vue yoki boshqa)
+## Validation Rules
+
+### Create/Update Employee Validation
+- `name`: Required, non-empty string
+- `surname`: Required, non-empty string
+- `email`: Required, valid email format
+- `role`: Optional, must be either "employee" or "admin"
+- `salary.base`: Optional, must be a number
+- `salary.kpiPercent`: Optional, must be a number
+- `salary.bonus`: Optional, must be a number
+- `salary.penalty`: Optional, must be a number
+
+## Error Handling
+
+The application handles errors gracefully:
+- **400 Bad Request**: Validation errors or invalid data
+- **404 Not Found**: Resource not found
+- **500 Internal Server Error**: Server-side errors
+
+Errors are displayed to users using Ant Design's `message` component.
+
+## Testing
+
+To test the application:
+
+1. Start both backend and frontend servers
+2. Navigate to `http://localhost:5173` in your browser
+3. Use the interface to:
+   - Add new employees
+   - Edit existing employees
+   - Delete employees
+   - View employee statistics
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue: POST 400 errors**
+- Ensure all required fields are filled
+- Check that email is in valid format
+- Verify salary fields are numbers
+
+**Issue: Salary undefined**
+- The frontend properly handles salary as an object with default values
+- Backend ensures salary fields default to 0 if not provided
+
+**Issue: MongoDB connection failed**
+- Verify your `.env` file has correct MongoDB URI
+- Ensure MongoDB service is running
+
+**Issue: CORS errors**
+- The backend has CORS enabled by default
+- Ensure frontend is running on `http://localhost:5173`
+
+## Deployment
+
+### Backend Deployment
+1. Build for production: `npm run build`
+2. Deploy to platforms like:
+   - Heroku
+   - Render
+   - AWS
+   - DigitalOcean
+
+### Frontend Deployment
+1. Build for production: `npm run build`
+2. Deploy static files to:
+   - Vercel
+   - Netlify
+   - GitHub Pages
+   - AWS S3
+
+## License
+
+This project is for educational purposes.
