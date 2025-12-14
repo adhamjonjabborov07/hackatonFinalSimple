@@ -1,195 +1,165 @@
 import React, { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import { Table, Button, Modal, Form, Input, Select, message, Card } from "antd";
-import { getUsers, createUser, updateUser, deleteUser } from "../api";
+import { Table, Button, Modal, Form, Input, Select, message } from "antd";
+import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from "../api";
+import StatCard from "../components/StatCard";
+import EmployeeForm from "../components/EmployeeForm";
+import { UserOutlined, TeamOutlined, DollarOutlined, RiseOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
 
 const Dashboard = () => {
-  const [active, setActive] = useState("dashboard");
-  const [users, setUsers] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [form] = Form.useForm();
+    const [employees, setEmployees] = useState([]);
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [editingEmployee, setEditingEmployee] = useState(null);
+    const [form] = Form.useForm();
 
-  const fetchUsers = async () => {
-    try {
-      const res = await getUsers();
-      setUsers(res.data);
-    } catch (err) {
-      message.error("Userlarni olishda xato");
-      console.log(err);
-    }
-  };
+    const fetchEmployees = async () => {
+        try {
+            const res = await getEmployees();
+            setEmployees(res.data);
+        } catch (err) {
+            message.error("Failed to fetch users");
+            console.log(err);
+        }
+    };
 
-  useEffect(() => { fetchUsers(); }, []);
+    useEffect(() => {
+        fetchEmployees();
+    }, []);
 
-  const showModal = (user = null) => {
-    setEditingUser(user);
-    setIsModalVisible(true);
+    const showModal = (employee = null) => {
+        setEditingEmployee(employee);
+        setIsModalVisible(true);
 
-    if (user) {
-      form.setFieldsValue({
-        name: user.name,
-        surname: user.surname,
-        email: user.email,
-        role: user.role,
-      });
-    } else {
-      form.setFieldsValue({
-        name: "",
-        surname: "",
-        email: "",
-        password: "",
-        role: "user",
-      });
-    }
-  };
+        if (employee) {
+            form.setFieldsValue({
+                name: employee.name,
+                surname: employee.surname,
+                email: employee.email,
+                role: employee.role,
+                position: employee.position,
+                department: employee.department,
+                baseSalary: employee.salary?.base || 0,
+                kpiPercentage: employee.salary?.kpiPercent || 0,
+                bonus: employee.salary?.bonus || 0,
+                penalty: employee.salary?.penalty || 0,
+            });
+        } else {
+            form.resetFields();
+        }
+    };
 
+    const handleCancel = () => {
+        setIsModalVisible(false);
+        setEditingEmployee(null);
+        form.resetFields();
+    };
 
-  const handleCancel = () => {
-    setIsModalVisible(false);
-    setEditingUser(null);
-    form.resetFields();
-  };
-  const handleFinish = async (values) => {
-    try {
-      const payload = { ...values };
+    const handleFinish = async (values) => {
+        try {
+            const payload = {
+                name: values.name,
+                surname: values.surname,
+                email: values.email,
+                role: values.role || "employee",
+                position: values.position || "",
+                department: values.department || "",
+                salary: {
+                    base: Number(values.baseSalary),
+                    kpiPercent: Number(values.kpiPercentage || 0),
+                    bonus: Number(values.bonus || 0),
+                    penalty: Number(values.penalty || 0),
+                },
+            };
 
-      if (editingUser && !payload.password) {
-        delete payload.password;
-      }
+            if (editingEmployee) {
+                await updateEmployee(editingEmployee._id, payload);
+                message.success("User updated successfully");
+            } else {
+                await createEmployee(payload);
+                message.success("User added successfully");
+            }
 
-      if (editingUser) {
-        await updateUser(editingUser._id, payload);
-        message.success("User yangilandi");
-      } else {
-        await createUser(payload);
-        message.success("User qo‘shildi");
-      }
+            fetchEmployees();
+            handleCancel();
+        } catch (err) {
+            console.log(err.response?.data || err.message);
+            message.error(err.response?.data?.message || "Failed to save user");
+        }
+    };
 
-      fetchUsers();
-      handleCancel();
-    } catch (err) {
-      console.log(err.response?.data || err.message);
-      message.error(err.response?.data?.message || "Xato yuz berdi");
-    }
-  };
+    const handleDelete = async (id) => {
+        try {
+            await deleteEmployee(id);
+            message.success("User deleted successfully");
+            fetchEmployees();
+        } catch (err) {
+            message.error("Failed to delete user");
+        }
+    };
 
+    const columns = [
+        { title: "Name", dataIndex: "name", key: "name" },
+        { title: "Surname", dataIndex: "surname", key: "surname" },
+        { title: "Email", dataIndex: "email", key: "email" },
+        { title: "Department", dataIndex: "department", key: "department" },
+        { title: "Position", dataIndex: "position", key: "position" },
+        { title: "Role", dataIndex: "role", key: "role" },
+        {
+            title: "Base Salary",
+            key: "salary",
+            render: (_, record) => `$${record.salary?.base || 0}`,
+        },
+        {
+            title: "Actions",
+            key: "actions",
+            render: (_, record) => (
+                <div className="flex gap-2">
+                    <Button type="primary" onClick={() => showModal(record)}>Edit</Button>
+                    <Button danger onClick={() => handleDelete(record._id)}>Delete</Button>
+                </div>
+            ),
+        },
+    ];
 
-  const handleDelete = async (id) => {
-    try {
-      await deleteUser(id);
-      message.success("User o‘chirildi");
-      fetchUsers();
-    } catch (err) {
-      message.error("O‘chirishda xato");
-    }
-  };
+    const stats = {
+        totalUsers: employees.length,
+        totalAdmins: employees.filter(u => u.role === "admin").length,
+        totalSalary: employees.reduce((sum, u) => sum + (u.salary?.base || 0), 0),
+        avgSalary: employees.length > 0 ? employees.reduce((sum, u) => sum + (u.salary?.base || 0), 0) / employees.length : 0,
+    };
 
-  const columns = [
-    { title: "Name", dataIndex: "name", key: "name" },
-    { title: "Surname", dataIndex: "surname", key: "surname" },
-    { title: "Email", dataIndex: "email", key: "email" },
-    { title: "Role", dataIndex: "role", key: "role" },
-    {
-      title: "Created At",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      render: (text) => new Date(text).toLocaleDateString()
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <div className="flex gap-2">
-          <Button type="primary" onClick={() => showModal(record)}>Edit</Button>
-          <Button danger onClick={() => handleDelete(record._id)}>Delete</Button>
+    return (
+        <div className="bg-gray-50 p-6 rounded-lg">
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">Boshqaruv paneli</h1>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <StatCard title="Total Users" value={stats.totalUsers} icon={<TeamOutlined className="text-2xl" />} color="blue" />
+                <StatCard title="Admins" value={stats.totalAdmins} icon={<UserOutlined className="text-2xl" />} color="green" />
+                <StatCard title="Maoshlar Tahlili" value={`$${stats.totalSalary.toLocaleString()}`} icon={<DollarOutlined className="text-2xl" />} color="purple" />
+                <StatCard title="Maoshlar Timeline" value={`$${Math.round(stats.avgSalary).toLocaleString()}`} icon={<RiseOutlined className="text-2xl" />} color="yellow" />
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-gray-800">Users Management</h2>
+                    <Button type="primary" onClick={() => showModal()}>Xodim qo'shish</Button>
+                </div>
+                <Table columns={columns} dataSource={employees} rowKey="_id" />
+            </div>
+
+            <Modal title={editingEmployee ? "Edit User" : "Add User"} open={isModalVisible} onCancel={handleCancel} footer={null}>
+                <Form form={form} layout="vertical" initialValues={{ role: "employee" }} onFinish={handleFinish}>
+                    <EmployeeForm />
+
+                    <div className="flex justify-end gap-2 mt-6">
+                        <Button onClick={handleCancel}>Cancel</Button>
+                        <Button type="primary" htmlType="submit">{editingEmployee ? "Update" : "Add"}</Button>
+                    </div>
+                </Form>
+            </Modal>
         </div>
-      ),
-    },
-  ];
-
-  return (
-    <div className="flex min-h-screen">
-      <Sidebar active={active} setActive={setActive} />
-      <div className="flex-1 p-6 bg-gray-100">
-
-        {active === "dashboard" && (
-          <>
-            <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card title="Total Users" className="text-center">{users.length}</Card>
-              <Card title="Admins" className="text-center">{users.filter(u => u.role === "admin").length}</Card>
-            </div>
-          </>
-        )}
-
-        {active === "users" && (
-          <>
-            <h1 className="text-2xl font-bold mb-4">Users Management</h1>
-            <Button type="primary" className="mb-4" onClick={() => showModal()}>Add User</Button>
-            <Table columns={columns} dataSource={users} rowKey="_id" />
-          </>
-        )}
-
-        {active === "settings" && (
-          <div>
-            <h1 className="text-2xl font-bold mb-4">Settings</h1>
-            <p>Bu yerga settings qo‘shiladi</p>
-          </div>
-        )}
-
-        <Modal
-          title={editingUser ? "Edit User" : "Add User"}
-          open={isModalVisible}
-          onCancel={handleCancel}
-          footer={null}
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleFinish}
-          >
-            <Form.Item label="Name" name="name" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-
-            <Form.Item label="Surname" name="surname" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-
-            <Form.Item label="Email" name="email" rules={[{ required: true, type: "email" }]}>
-              <Input />
-            </Form.Item>
-
-            {!editingUser && (
-              <Form.Item label="Password" name="password" rules={[{ required: true }]}>
-                <Input.Password />
-              </Form.Item>
-            )}
-
-            <Form.Item
-              label="Role"
-              name="role"
-              rules={[{ required: true, message: "Role tanlang" }]}
-            >
-              <Select placeholder="Role tanlang">
-                <Option value="user">User</Option>
-                <Option value="admin">Admin</Option>
-              </Select>
-            </Form.Item>
-
-            <div className="flex justify-end gap-2">
-              <Button onClick={handleCancel}>Cancel</Button>
-              <Button type="primary" htmlType="submit">{editingUser ? "Update" : "Add"}</Button>
-            </div>
-          </Form>
-        </Modal>
-
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Dashboard;
