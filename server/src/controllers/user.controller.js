@@ -1,7 +1,6 @@
 import User from "../models/user.js";
 import bcrypt from "bcryptjs";
 
-// GET ALL USERS
 export const getUsers = async (req, res) => {
   try {
     const users = await User.find().select("-password");
@@ -11,7 +10,6 @@ export const getUsers = async (req, res) => {
   }
 };
 
-// CREATE USER
 export const createUser = async (req, res) => {
   try {
     const { name, surname, email, password, role } = req.body;
@@ -48,7 +46,6 @@ export const createUser = async (req, res) => {
   }
 };
 
-// UPDATE USER
 export const updateUser = async (req, res) => {
   try {
     const { name, surname, email, role, password } = req.body;
@@ -60,7 +57,6 @@ export const updateUser = async (req, res) => {
       role,
     };
 
-    // 🔐 agar password kelsa — hash qilamiz
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
     }
@@ -81,7 +77,6 @@ export const updateUser = async (req, res) => {
   }
 };
 
-// DELETE USER
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
