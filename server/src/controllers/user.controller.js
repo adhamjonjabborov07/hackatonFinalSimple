@@ -1,92 +1,77 @@
-import User from "../models/user.js";
-import bcrypt from "bcryptjs";
+import Employee from "../models/user.js";
 
-export const getUsers = async (req, res) => {
+export const getEmployees = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
-    res.json(users);
-  } catch (e) {
-    res.status(500).json({ message: e.message });
+    const employees = await Employee.find();
+    res.json(employees);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-export const createUser = async (req, res) => {
+export const createEmployee = async (req, res) => {
   try {
-    const { name, surname, email, password, role } = req.body;
+    const { name, surname, email, role, position, department, salary } = req.body;
 
-    if (!name || !surname || !email || !password) {
-      return res.status(400).json({ message: "Barcha maydonlar majburiy" });
-    }
-
-    const exist = await User.findOne({ email });
-    if (exist) {
-      return res.status(400).json({ message: "Email mavjud" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
+    const employee = new Employee({
       name,
       surname,
       email,
-      password: hashedPassword,
-      role: role || "user",
+      role: role || "employee",
+      position: position || "",
+      department: department || "",
+      salary: {
+        base: salary?.base || 0,
+        kpiPercent: salary?.kpiPercent || 0,
+        bonus: salary?.bonus || 0,
+        penalty: salary?.penalty || 0,
+      },
     });
 
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      surname: user.surname,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt,
-    });
-  } catch (e) {
-    res.status(400).json({ message: e.message });
+    await employee.save();
+    res.status(201).json(employee);
+  } catch (err) {
+    if (err.code === 11000) { 
+      return res.status(400).json({ message: "Email already exists" });
+    }
+    res.status(400).json({ message: err.message });
   }
 };
 
-export const updateUser = async (req, res) => {
+export const updateEmployee = async (req, res) => {
   try {
-    const { name, surname, email, role, password } = req.body;
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
 
-    const updateData = {
-      name,
-      surname,
-      email,
-      role,
+    const { name, surname, email, role, position, department, salary } = req.body;
+
+    employee.name = name ?? employee.name;
+    employee.surname = surname ?? employee.surname;
+    employee.email = email ?? employee.email;
+    employee.role = role ?? employee.role;
+    employee.position = position ?? employee.position;
+    employee.department = department ?? employee.department;
+
+    employee.salary = {
+      base: salary?.base ?? employee.salary.base,
+      kpiPercent: salary?.kpiPercent ?? employee.salary.kpiPercent,
+      bonus: salary?.bonus ?? employee.salary.bonus,
+      penalty: salary?.penalty ?? employee.salary.penalty,
     };
 
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
-    }
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    ).select("-password");
-
-    if (!user) {
-      return res.status(404).json({ message: "User topilmadi" });
-    }
-
-    res.json(user);
-  } catch (e) {
-    res.status(400).json({ message: e.message });
+    await employee.save();
+    res.json(employee);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 };
 
-export const deleteUser = async (req, res) => {
+export const deleteEmployee = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User topilmadi" });
-    }
-
-    res.json({ message: "User o‘chirildi" });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
+    const employee = await Employee.findByIdAndDelete(req.params.id);
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
+    res.json({ message: "Employee deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
