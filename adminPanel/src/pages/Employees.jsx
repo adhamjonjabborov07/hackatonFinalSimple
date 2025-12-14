@@ -95,7 +95,7 @@ const Employees = () => {
       message.success("Foydalanuvchi muvaffaqiyatli o'chirildi");
       fetchEmployees();
     } catch (err) {
-      message.error("Foydalanuvchini o'chirishda xato");
+      message.error("Foydalanuvchini o'chirishda xatolik yuz berdi");
       console.log(err);
     }
   };
